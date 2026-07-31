@@ -302,7 +302,7 @@ The tradeoff: it does mean deploys can't happen unattended (e.g., middle-of-the-
 
 ## 📸 Screenshots
 
-- [ ] Blue Ocean view — parallel Frontend/Backend test branches
-- [ ] Pipeline paused at Production Approval
-- [ ] Completed green pipeline after approval
-- [ ] Success email
+<img width="1920" height="1080" alt="Screenshot (29)" src="https://github.com/user-attachments/assets/5c8ce9f3-68d1-4e2c-a1ec-3be470064894" />
+
+<img width="1920" height="1080" alt="Screenshot (30)" src="https://github.com/user-attachments/assets/7d11bcda-c1b3-449c-8fbc-f5896ebb1e15" />
+
