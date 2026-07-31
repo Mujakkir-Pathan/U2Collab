@@ -18,6 +18,24 @@ pipeline {
             }
         }
 
+        // --- NEW: Assignment #4 - parallel test stages ---
+        stage('Testing Suite') {
+            parallel {
+                stage('Frontend Tests') {
+                    steps {
+                        echo "Running React Tests"
+                        // real version later: sh 'cd client && npm test'
+                    }
+                }
+                stage('Backend Tests') {
+                    steps {
+                        echo "Running Java Tests"
+                        // real version later: sh 'cd server && npm test'
+                    }
+                }
+            }
+        }
+
         stage('Build Client Image') {
             steps {
                 sh """
@@ -54,114 +72,77 @@ pipeline {
             }
         }
 
-        // stage('Deploy') {
-        //     steps {
-        //         sh """
-        //             docker compose down --remove-orphans || true
-        //             docker compose pull
-        //             docker compose up -d
-        //         """
-        //     }
-        // }
+        // --- NEW: Assignment #4 - manual approval gate before Deploy ---
+        stage('Production Approval') {
+            steps {
+                // timeout guards against the pipeline (and its executor) hanging forever
+                // if nobody clicks Approve -- good practice beyond the base assignment ask
+                timeout(time: 30, unit: 'MINUTES') {
+                    input message: 'Deploy to Production?', ok: 'Approve'
+                }
+            }
+        }
 
-        // I have divide runtime in to new instance so ssh into it through jenkins 
-//         stage('Deploy') {
-//     steps {
-//         sshagent(credentials: ['deploy-ssh-key']) {
-//             sh """
-//                 ssh -o StrictHostKeyChecking=no ec2-user@3.221.197.232 '
-//                     cd /opt/u2collab &&
-//                     docker compose down --remove-orphans || true &&
-//                     docker compose pull &&
-//                     docker compose up -d
-//                 '
-//             """
-//         }
-//     }
-// }
-        
-        // Applied parameterization rollback strategies using GIT_SHA value in .env
         stage('Deploy') {
-    steps {
-        sshagent(credentials: ['deploy-ssh-key']) {
-            sh """
-                ssh -o StrictHostKeyChecking=no ec2-user@3.221.197.232 '
-                    cd /opt/u2collab &&
-                    echo "CLIENT_TAG=${GIT_SHA}" > .env &&
-                    echo "SERVER_TAG=${GIT_SHA}" >> .env &&
-                    docker compose down --remove-orphans || true &&
-                    docker compose pull &&
-                    docker compose up -d
-                '
-            """
+            steps {
+                sshagent(credentials: ['deploy-ssh-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@3.221.197.232 '
+                            cd /opt/u2collab &&
+                            echo "CLIENT_TAG=${GIT_SHA}" > .env &&
+                            echo "SERVER_TAG=${GIT_SHA}" >> .env &&
+                            docker compose down --remove-orphans || true &&
+                            docker compose pull &&
+                            docker compose up -d
+                        '
+                    """
+                }
+            }
+        }
+
+        stage('Health Check & Record') {
+            steps {
+                sshagent(['deploy-ssh-key']) {
+                    sh """
+                        sleep 10
+                        ssh -o StrictHostKeyChecking=no ec2-user@3.221.197.232 '
+                            curl -sf http://localhost:5000/api/health > /dev/null &&
+                            echo "${GIT_SHA}" > /opt/u2collab/current-deploy.txt
+                        '
+                    """
+                }
+            }
         }
     }
-}
 
-        
-stage('Health Check & Record') {
-    steps {
-        sshagent(['deploy-ssh-key']) {
-            sh """
-                sleep 10
-                ssh -o StrictHostKeyChecking=no ec2-user@3.221.197.232 '
-                    curl -sf http://localhost:5000/api/health > /dev/null &&
-                    echo "${GIT_SHA}" > /opt/u2collab/current-deploy.txt
-                '
-            """
-        }
-    }
-}
-    }
-
-    
-// Getting E-mail on success and failure, logout from docker always.
-    // post {
-    //     success {
-    //         mail to: 'charanbavaji.official@gmail.com',
-    //              subject: "U2Collab Pipeline SUCCESS - Build #${env.BUILD_NUMBER}",
-    //              body: "Build ${env.BUILD_NUMBER} deployed successfully. Commit: ${GIT_SHA}"
-    //     }
-    //     failure {
-    //         mail to: 'charanbavaji.official@gmail.com',
-    //              subject: "U2Collab Pipeline FAILED - Build #${env.BUILD_NUMBER}",
-    //              body: "Build ${env.BUILD_NUMBER} failed. Check Jenkins console output for details."
-    //     }
-    //     always {
-    //         sh 'docker logout'
-    //     }
-    // }
-
-
-    // I have updated post stage to rollback whenever the pipline breaks at any stage to previous image
     post {
-    success {
-        mail to: 'charanbavaji.official@gmail.com',
-             subject: "U2Collab Pipeline SUCCESS - Build #${env.BUILD_NUMBER}",
-             body: "Build ${env.BUILD_NUMBER} deployed successfully. Commit: ${GIT_SHA}"
-    }
-    failure {
-        sshagent(credentials: ['deploy-ssh-key']) {
-            sh """
-                ssh -o StrictHostKeyChecking=no ec2-user@3.221.197.232 '
-                    cd /opt/u2collab &&
-                    LAST_GOOD=\$(cat current-deploy.txt) &&
-                    echo "CLIENT_TAG=\$LAST_GOOD" > .env &&
-                    echo "SERVER_TAG=\$LAST_GOOD" >> .env &&
-                    docker compose down --remove-orphans &&
-                    docker compose pull &&
-                    docker compose up -d &&
-                    sleep 10 &&
-                    curl -sf http://localhost:5000/api/health
-                '
-            """
+        success {
+            mail to: 'charanbavaji.official@gmail.com',
+                 subject: "U2Collab Pipeline SUCCESS - Build #${env.BUILD_NUMBER}",
+                 body: "Build ${env.BUILD_NUMBER} deployed successfully. Commit: ${GIT_SHA}"
         }
-        mail to: 'charanbavaji.official@gmail.com',
-             subject: "U2Collab Pipeline FAILED - Auto-rollback triggered - Build #${env.BUILD_NUMBER}",
-             body: "Build ${env.BUILD_NUMBER} (commit ${GIT_SHA}) failed. Automatically rolled back to last known good image recorded in current-deploy.txt. Check Jenkins console output for details."
+        failure {
+            sshagent(credentials: ['deploy-ssh-key']) {
+                sh """
+                    ssh -o StrictHostKeyChecking=no ec2-user@3.221.197.232 '
+                        cd /opt/u2collab &&
+                        LAST_GOOD=\$(cat current-deploy.txt) &&
+                        echo "CLIENT_TAG=\$LAST_GOOD" > .env &&
+                        echo "SERVER_TAG=\$LAST_GOOD" >> .env &&
+                        docker compose down --remove-orphans &&
+                        docker compose pull &&
+                        docker compose up -d &&
+                        sleep 10 &&
+                        curl -sf http://localhost:5000/api/health
+                    '
+                """
+            }
+            mail to: 'charanbavaji.official@gmail.com',
+                 subject: "U2Collab Pipeline FAILED - Auto-rollback triggered - Build #${env.BUILD_NUMBER}",
+                 body: "Build ${env.BUILD_NUMBER} (commit ${GIT_SHA}) failed. Automatically rolled back to last known good image recorded in current-deploy.txt. Check Jenkins console output for details."
+        }
+        always {
+            sh 'docker logout'
+        }
     }
-    always {
-        sh 'docker logout'
-    }
-}
 }
