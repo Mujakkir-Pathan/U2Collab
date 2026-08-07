@@ -87,7 +87,7 @@ pipeline {
                 }
                 stage('Backend Tests') {
                     steps {
-                        echo "Running Java Tests"
+                        echo "Running Node Tests"
                     }
                 }
             }
