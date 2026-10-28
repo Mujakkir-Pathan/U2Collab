@@ -1,0 +1,30 @@
+
+U2Collab has been deployed with Helm (release: {{ .Release.Name }}, namespace: {{ .Release.Namespace }}).
+
+Check the rollout:
+  kubectl -n {{ .Release.Namespace }} get pods,svc
+
+{{- if .Values.gateway.enabled }}
+
+Get your public URL (wait ~2-3 min for the AWS NLB to be provisioned):
+  kubectl -n {{ .Release.Namespace }} get gateway {{ include "u2collab.fullname" . }}-gateway \
+    -o jsonpath='{.status.addresses[0].value}'
+
+Then open:  http://<that-address>/
+Health:     curl http://<that-address>/api/health
+{{- if eq .Values.server.nodeEnv "production" }}
+
+NOTE: server.nodeEnv=production sets secure cookies, which browsers only send
+over HTTPS. Either enable gateway.tls (with a real hostname) or upgrade:
+  helm upgrade {{ .Release.Name }} . -n {{ .Release.Namespace }} --set server.nodeEnv=development
+{{- end }}
+{{- else }}
+
+Gateway is disabled. Reach the app with a port-forward:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/u2collab-client-service 8080:{{ .Values.client.servicePort }}
+  open http://localhost:8080/
+{{- end }}
+
+Secrets come from AWS Secrets Manager ({{ .Values.externalSecrets.secretKey }}) via ExternalSecret.
+If pods sit in CreateContainerConfigError, the secret JSON is missing or incomplete:
+  kubectl -n {{ .Release.Namespace }} describe externalsecret u2collab-secrets

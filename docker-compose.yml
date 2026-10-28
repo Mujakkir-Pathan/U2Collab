@@ -1,34 +1,38 @@
-# Always pull the latest images for client and server services
-# services:
-#   client:
-#     image: charanbavaji/u2collab-client:latest
-#     container_name: u2collab-client
-#     restart: unless-stopped
-#     ports:
-#       - "5173:80"
-
-#   server:
-#     image: charanbavaji/u2collab-server:latest
-#     container_name: u2collab-server
-#     restart: unless-stopped
-#     ports:
-#       - "5000:5000"
-#     env_file:
-#       - /opt/u2collab-secrets/server.env
-
-# Use environment variables to specify the image tags for client and server services
+# Local dev / EC2 deploy. GitHub Actions + ArgoCD own the Kubernetes path;
+# this file is for docker compose (make up) and the legacy Jenkins/EC2 flow.
+#
+# Tags come from .env (make setup): CLIENT_TAG / SERVER_TAG — Jenkins writes
+# sha-* there after a push.
 services:
   client:
+    build:
+      context: ./client
+      args:
+        # Same-origin defaults: nginx proxies /api and /socket.io to `server`.
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-/}
     image: charanbavaji/u2collab-client:${CLIENT_TAG:-latest}
     container_name: u2collab-client
     restart: unless-stopped
+    depends_on:
+      - server
     ports:
-      - "5173:80"
+      - "${CLIENT_HOST_PORT:-5173}:80"
+
   server:
+    build: ./server
     image: charanbavaji/u2collab-server:${SERVER_TAG:-latest}
     container_name: u2collab-server
     restart: unless-stopped
-    ports:
-      - "5000:5000"
+    # SERVER_ENV_FILE: local default is ./server/.env; on the EC2 deploy box
+    # Jenkins sets SERVER_ENV_FILE=/opt/u2collab-secrets/server.env in .env.
     env_file:
-      - /opt/u2collab-secrets/server.env
+      - ${SERVER_ENV_FILE:-./server/.env}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    ports:
+      - "${SERVER_HOST_PORT:-5000}:5000"

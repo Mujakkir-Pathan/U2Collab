@@ -1,0 +1,41 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ include "u2collab.fullname" . }}-gateway
+  labels:
+    {{- include "u2collab.labels" . | nindent 4 }}
+spec:
+  gatewayClassName: {{ .Values.gateway.className }}
+  {{- with .Values.gateway.serviceAnnotations }}
+  # Propagated by Envoy Gateway to the data-plane Service (e.g. force NLB on EKS).
+  infrastructure:
+    annotations:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: {{ .Values.gateway.listenerPort }}
+      {{- if and .Values.gateway.hostname (not .Values.gateway.tls.enabled) }}
+      hostname: {{ .Values.gateway.hostname | quote }}
+      {{- end }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    {{- if and .Values.gateway.tls.enabled .Values.gateway.hostname }}
+    - name: https
+      protocol: HTTPS
+      port: {{ .Values.gateway.tls.port }}
+      hostname: {{ .Values.gateway.hostname | quote }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            group: ""
+            name: {{ .Values.gateway.tls.secretName | default (printf "%s-tls" (include "u2collab.fullname" .)) }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    {{- end }}
+{{- end }}

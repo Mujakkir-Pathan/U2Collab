@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: u2collab-intern-role-binding
+  namespace: u2collab
+subjects:
+  - kind: ServiceAccount
+    name: u2collab-intern
+    namespace: u2collab
+roleRef:
+  kind: Role
+  name: u2collab-intern-role
+  apiGroup: rbac.authorization.k8s.io

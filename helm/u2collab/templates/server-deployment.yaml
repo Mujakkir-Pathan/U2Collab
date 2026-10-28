@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "u2collab.fullname" . }}-server
+  labels:
+    {{- include "u2collab.labels" . | nindent 4 }}
+    app: u2collab-server
+spec:
+  replicas: {{ .Values.server.replicas }}
+  selector:
+    matchLabels:
+      app: u2collab-server
+  template:
+    metadata:
+      labels:
+        {{- include "u2collab.labels" . | nindent 8 }}
+        app: u2collab-server
+    spec:
+      containers:
+        - name: u2collab-server
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+          imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.server.port }}
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GOOGLE_CLIENT_SECRET
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GITHUB_CLIENT_ID
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GITHUB_CLIENT_SECRET
+            # Public origin of the client, exact match required (CORS + OAuth
+            # redirects). Lives in the Secrets Manager JSON, not here.
+            - name: CLIENT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: CLIENT_URL
+            - name: PORT
+              value: {{ .Values.server.port | quote }}
+            - name: NODE_ENV
+              value: {{ .Values.server.nodeEnv | quote }}
+          # Liveness must NOT be /api/health: it 503s whenever Atlas is
+          # unreachable, and checking a dependency in liveness turns one
+          # database blip into a restart storm.
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.server.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.server.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}

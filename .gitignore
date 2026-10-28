@@ -1,0 +1,35 @@
+# --- env ---------------------------------------------------------------------
+# Keep .env local; the committed template is .env.example
+.env
+
+# --- node --------------------------------------------------------------------
+node_modules/
+dist/
+.vite/
+logs/
+*.log
+
+# --- Terraform ---------------------------------------------------------------
+terraform/**/.terraform/
+*.tfstate
+*.tfstate.*
+# Both forms: '*.tfplan' does NOT match a file named plainly 'tfplan',
+# which is what `terraform plan -out=tfplan` produces by default.
+*.tfplan
+tfplan
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+
+# Personal to you: contains YOUR globally-unique state bucket name.
+terraform/backend.hcl
+*.auto.tfvars
+
+# NOT ignored, on purpose: .terraform.lock.hcl is provider checksums —
+# committing it is the whole point; it is Terraform's package-lock.json.
+# terraform.tfvars holds teaching defaults with no secrets in it.
+
+# --- misc --------------------------------------------------------------------
+.DS_Store
+*.local
+values-local.yaml

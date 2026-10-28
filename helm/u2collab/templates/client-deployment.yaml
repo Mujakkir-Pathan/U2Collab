@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "u2collab.fullname" . }}-client
+  labels:
+    {{- include "u2collab.labels" . | nindent 4 }}
+    app: u2collab-client
+spec:
+  replicas: {{ .Values.client.replicas }}
+  selector:
+    matchLabels:
+      app: u2collab-client
+  template:
+    metadata:
+      labels:
+        {{- include "u2collab.labels" . | nindent 8 }}
+        app: u2collab-client
+    spec:
+      containers:
+        - name: u2collab-client
+          image: "{{ .Values.client.image.repository }}:{{ .Values.client.image.tag }}"
+          imagePullPolicy: {{ .Values.client.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.client.containerPort }}
+          {{- if .Values.client.nginxConfig.enabled }}
+          volumeMounts:
+            # Lazy-resolving nginx config: nginx must not die at startup when
+            # the `server` Service DNS is not registered yet (CoreDNS race).
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+          {{- end }}
+          # No env: VITE_API_URL / VITE_SOCKET_URL are build args baked into the
+          # bundle. CI builds with same-origin /api and /socket.io.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.client.containerPort }}
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.client.containerPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.client.resources | nindent 12 }}
+      {{- if .Values.client.nginxConfig.enabled }}
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: {{ include "u2collab.fullname" . }}-client-nginx
+      {{- end }}

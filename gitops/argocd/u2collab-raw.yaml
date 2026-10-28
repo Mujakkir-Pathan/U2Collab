@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: u2collab-raw
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Mujakkir-Pathan/U2Collab.git
+    targetRevision: main
+    path: k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: u2collab
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  syncPolicy:
+    automated:
+      prune: true      # delete resources removed from Git
+      selfHeal: true   # revert manual drift back to Git
+    syncOptions:
+      - CreateNamespace=true

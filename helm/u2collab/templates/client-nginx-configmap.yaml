@@ -1,0 +1,70 @@
+{{- if .Values.client.nginxConfig.enabled }}
+# In-cluster nginx config with LAZY upstream resolution.
+#
+# nginx resolves `proxy_pass http://server:5000;` hostnames at startup, so a
+# static upstream makes the pod crash-loop whenever CoreDNS is briefly
+# unavailable (k3s node restart, cluster start). The `resolver` + variable
+# form defers resolution to request time, so nginx starts with zero DNS and
+# just 502s until the upstream resolves.
+#
+# The upstream MUST be fully qualified: unlike libc, nginx's resolver does
+# not apply the pod's /etc/resolv.conf search domains, so the short name
+# `server` alone would NXDOMAIN at request time.
+#
+# This is mounted over the image's baked-in /etc/nginx/conf.d/default.conf,
+# which keeps the static-upstream config working for docker-compose.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "u2collab.fullname" . }}-client-nginx
+  labels:
+    {{- include "u2collab.labels" . | nindent 4 }}
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Cluster DNS (k3s/kubeadm default below; override per cluster —
+        # EKS CoreDNS is usually 172.20.0.10, kind is 10.96.0.10).
+        resolver {{ .Values.client.nginxConfig.resolver }} valid=10s ipv6=off;
+
+        # Same-origin API proxy (VITE_API_URL=/api).
+        location /api {
+            set $api_upstream http://{{ .Values.server.serviceName }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.server.port }};
+            proxy_pass $api_upstream;
+            proxy_http_version 1.1;
+            # $http_host (not $host) — $host drops the port, which breaks
+            # OAuth: passport builds redirect_uri from Host, and Google
+            # rejects redirect_uri_mismatch without the exact port.
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Socket.IO — WebSocket upgrade on the same server port.
+        location /socket.io {
+            set $socket_upstream http://{{ .Values.server.serviceName }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.server.port }};
+            proxy_pass $socket_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            # $http_host (not $host) — $host drops the port, which breaks
+            # OAuth: passport builds redirect_uri from Host, and Google
+            # rejects redirect_uri_mismatch without the exact port.
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+        }
+
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }
+{{- end }}

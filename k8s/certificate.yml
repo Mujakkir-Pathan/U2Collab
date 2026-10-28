@@ -1,0 +1,22 @@
+# Lives in u2collab because a Gateway listener can only reference a Secret in its
+# own namespace. Start on staging, confirm Ready, then switch to prod - in GIT,
+# since selfHeal reverts kubectl patch.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: u2collab-tls
+  namespace: u2collab
+spec:
+  secretName: u2collab-tls
+  dnsNames:
+    - u2collab.example.com # replace with your domain
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+    group: cert-manager.io
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  # Let's Encrypt certs last 90 days; renew 30 days out.
+  renewBefore: 720h

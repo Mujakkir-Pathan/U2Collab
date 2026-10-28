@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: u2collab-client-deployment
+  namespace: u2collab
+  labels:
+    app: u2collab-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: u2collab-client
+  template:
+    metadata:
+      labels:
+        app: u2collab-client
+    spec:
+      containers:
+        - name: u2collab-client
+          image: charanbavaji/u2collab-client:latest # CI bumps this to sha-*
+          ports:
+            - containerPort: 80
+          # No env: VITE_API_URL / VITE_SOCKET_URL are BUILD args baked into the
+          # bundle. The CI images are built with same-origin /api and /socket.io.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

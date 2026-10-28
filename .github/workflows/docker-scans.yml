@@ -1,0 +1,35 @@
+name: Docker Scan
+
+on:
+  workflow_call:
+
+jobs:
+  docker-file-lint-and-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        folders: ['client', 'server']
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v7
+
+      - name: ${{ matrix.folders }} Dockerfile Lint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.folders }}/Dockerfile
+
+      - name: Docker Build ${{ matrix.folders }}
+        run: docker build -t u2collab-${{ matrix.folders }}:ci .
+        working-directory: ${{ matrix.folders }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        continue-on-error: true
+        with:
+          image-ref: u2collab-${{ matrix.folders }}:ci
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'

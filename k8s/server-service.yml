@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: server
+  namespace: u2collab
+  labels:
+    app: u2collab-server
+spec:
+  selector:
+    app: u2collab-server
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5000 # service
+      targetPort: 5000 # Pod port

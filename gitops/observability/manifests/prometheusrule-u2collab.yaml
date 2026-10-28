@@ -1,0 +1,64 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: u2collab
+  namespace: observability
+  labels:
+    app.kubernetes.io/part-of: u2collab
+spec:
+  groups:
+    - name: u2collab-app
+      rules:
+        - alert: U2CollabSecretMissing
+          expr: |
+            kube_pod_container_status_waiting_reason{namespace=~"u2collab|u2collab-helm",reason="CreateContainerConfigError"} == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pods cannot start — u2collab-secrets is probably not being synced"
+            description: >-
+              CreateContainerConfigError almost always means a secretKeyRef
+              points at a key the ExternalSecret did not produce. Check the
+              AWS Secrets Manager JSON has every key the template expects.
+            runbook: "kubectl -n u2collab describe externalsecret u2collab-secrets"
+
+        - alert: U2CollabServerCrashLooping
+          expr: |
+            kube_pod_container_status_restarts_total{namespace=~"u2collab|u2collab-helm",container="u2collab-server"} > 3
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "u2collab-server is restart-looping"
+            description: >-
+              The server process.exit(1)s when MongoDB Atlas is unreachable at
+              startup — usually a bad MONGO_URI, a network path to Atlas that is
+              closed, or expired Atlas credentials.
+            runbook: "kubectl -n u2collab logs deploy/u2collab-server-deployment --tail=50"
+
+        - alert: U2CollabServerNotReady
+          expr: |
+            kube_deployment_status_replicas_available{namespace=~"u2collab|u2collab-helm",deployment=~"u2collab-server.*"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "No u2collab-server pod is Ready — login and collaboration are down"
+            description: >-
+              Readiness is /api/health, which 503s when the Mongo connection
+              drops. One replica only, so Ready=0 means full outage.
+            runbook: "kubectl -n u2collab get pods && kubectl -n u2collab describe pod -l app=u2collab-server"
+
+        - alert: U2CollabGatewayNoAddress
+          expr: |
+            kube_customresource_gateway_status_address{namespace=~"u2collab|u2collab-helm",name=~"u2collab.*gateway"} == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "The U2Collab Gateway has no load balancer address"
+            description: >-
+              Envoy Gateway could not provision an NLB — usually missing
+              kubernetes.io/role/elb subnet tags or exhausted AWS EIP quota.
+            runbook: "kubectl -n u2collab describe gateway && kubectl -n envoy-gateway-system logs deploy/envoy-gateway"

@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: u2collab-client-service
+  namespace: u2collab
+spec:
+  type: ClusterIP
+  selector:
+    app: u2collab-client
+  ports:
+    - protocol: TCP
+      port: 8080 # Service port
+      targetPort: 80 # Pod port (nginx)

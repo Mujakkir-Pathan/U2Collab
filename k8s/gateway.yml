@@ -1,0 +1,40 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: u2collab-gateway
+  namespace: u2collab
+spec:
+  gatewayClassName: envoy
+  # Envoy Gateway propagates these annotations to the data-plane Service it
+  # creates for this Gateway. The in-tree AWS provider turns the annotation
+  # into a real NLB (a plain LoadBalancer Service would be a Classic ELB).
+  infrastructure:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  listeners:
+    # Port 80 carries the ACME challenge and the redirect. No hostname, so the
+    # raw load balancer URL keeps working.
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+
+    # Needs the u2collab-tls Secret. Without it this listener alone goes
+    # ResolvedRefs=False; :80 keeps serving.
+    # Replace the hostname with YOUR domain (and the Certificate in
+    # certificate.yml to match) — it is also what CLIENT_URL must point at.
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: u2collab.example.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            group: ""
+            name: u2collab-tls
+      allowedRoutes:
+        namespaces:
+          from: Same

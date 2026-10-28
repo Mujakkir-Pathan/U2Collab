@@ -2,14 +2,16 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Accept build args and expose them as env vars for the Vite build step
-ARG VITE_API_URL
-ARG VITE_SOCKET_URL
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
+# Build-time only: baked into the bundle by Vite. The same-origin defaults
+# work behind the Kubernetes Gateway (routes /api, /socket.io to the server)
+# and behind the nginx proxy in this image. Jenkins/CI may override them.
+ARG VITE_API_URL=/api
+ARG VITE_SOCKET_URL=/
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_SOCKET_URL=$VITE_SOCKET_URL
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 

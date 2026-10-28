@@ -1,0 +1,36 @@
+# Infrastructure scrape targets only. The U2Collab Node server exposes no
+# /metrics endpoint (no prom-client), so there is nothing app-level to
+# ServiceMonitor yet — add one here once the server serves metrics.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: otel-collector-gateway
+  namespace: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - observability
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opentelemetry-collector
+  endpoints:
+    - port: metrics
+      interval: 30s
+    - port: prometheus
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: envoy-gateway-proxies
+  namespace: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - envoy-gateway-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: envoy
+  podMetricsEndpoints:
+    - port: metrics
+      interval: 30s

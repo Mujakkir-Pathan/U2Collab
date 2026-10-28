@@ -1,0 +1,39 @@
+name: Dependency scan
+
+on:
+  workflow_call:
+
+jobs:
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v7
+
+      - name: Make reports dir
+        run: mkdir -p reports
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Client npm audit
+        continue-on-error: true
+        run: (cd client && npm audit) | tee reports/client-npm-audit.txt
+
+      - name: Server npm audit
+        continue-on-error: true
+        run: (cd server && npm audit) | tee reports/server-npm-audit.txt
+
+      - name: Upload Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-scan-report
+          path: reports/
+          retention-days: 5

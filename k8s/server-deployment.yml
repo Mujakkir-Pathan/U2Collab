@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: u2collab-server-deployment
+  namespace: u2collab
+  labels:
+    app: u2collab-server
+spec:
+  # Hard 1: the server holds Yjs docs, whiteboard shapes and presence in
+  # in-memory Maps, and Socket.IO has no Redis adapter — a second replica
+  # would silently split rooms across pods.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: u2collab-server
+  template:
+    metadata:
+      labels:
+        app: u2collab-server
+    spec:
+      containers:
+        - name: u2collab-server
+          image: charanbavaji/u2collab-server:latest # CI bumps this to sha-*
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GOOGLE_CLIENT_SECRET
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GITHUB_CLIENT_ID
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: GITHUB_CLIENT_SECRET
+            # Must equal the public origin of the client EXACTLY (scheme + host,
+            # no trailing slash). It drives CORS, Socket.IO CORS and the OAuth
+            # success/failure redirects — keep it in the Secrets Manager JSON so
+            # there is one place to change when the hostname does.
+            - name: CLIENT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: u2collab-secrets
+                  key: CLIENT_URL
+            - name: PORT
+              value: "5000"
+            # production => secure + sameSite=none cookies, which requires the
+            # public origin to be HTTPS. On plain HTTP set this to development.
+            - name: NODE_ENV
+              value: production
+          # Liveness must NOT be /api/health: that endpoint returns 503 whenever
+          # MongoDB Atlas is unreachable, and a liveness probe that checks a
+          # dependency turns one Atlas blip into a restart storm.
+          livenessProbe:
+            tcpSocket:
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          # Readiness DOES check /api/health: pulling the pod out of Service
+          # endpoints while the DB is down is exactly what we want.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi

@@ -1,0 +1,66 @@
+# Dependency updates.
+#
+# This is the other half of the supply-chain story. Pinning a version
+# (package-lock.json, .terraform.lock.hcl) makes builds reproducible; Dependabot
+# is what stops "reproducible" from quietly meaning "reproducibly vulnerable".
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: terraform
+    directory: /terraform
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: terraform
+    directory: /terraform/bootstrap
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: npm
+    directory: /client
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Yjs and its protocol/wire libraries share one version contract —
+      # mixing release lines produces sync bugs that read like your bug.
+      collaboration:
+        patterns:
+          - "yjs"
+          - "y-protocols"
+          - "lib0"
+          - "@tiptap/*"
+      socket-io:
+        patterns:
+          - "socket.io*"
+
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      collaboration:
+        patterns:
+          - "yjs"
+          - "y-protocols"
+          - "lib0"
+      socket-io:
+        patterns:
+          - "socket.io*"
+      passport:
+        patterns:
+          - "passport*"
+
+  - package-ecosystem: docker
+    directories:
+      - /client
+      - /server
+    schedule:
+      interval: weekly

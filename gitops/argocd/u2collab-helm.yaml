@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: u2collab-helm
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Mujakkir-Pathan/U2Collab.git
+    targetRevision: main
+    path: helm/u2collab
+    helm:
+      releaseName: u2collab
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: u2collab-helm
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
