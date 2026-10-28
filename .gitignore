@@ -1,6 +1,10 @@
 # --- env ---------------------------------------------------------------------
-# Keep .env local; the committed template is .env.example
+# Keep .env local; the committed template is .env.example.
+# '.env' alone would MISS Vite/React variants like .env.local / .env.production.
 .env
+.env.*
+!.env.example
+!.env.*.example
 
 # --- node --------------------------------------------------------------------
 node_modules/
@@ -33,3 +37,16 @@ terraform/backend.hcl
 .DS_Store
 *.local
 values-local.yaml
+
+# --- keys & credentials ------------------------------------------------------
+# TLS/private keys, cloud kubeconfigs, OAuth service-account dumps.
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+*service-account*.json
+kubeconfig
+kubeconfig.*
+.kube/
