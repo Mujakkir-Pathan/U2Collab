@@ -321,7 +321,7 @@ kubectl -n observability port-forward svc/observability-grafana 3000:80
 
 | Piece | What it does |
 | --- | --- |
-| `.github/workflows/devsecops.yml` | orchestrator on PR to `main` + push to `main` (push is **path-filtered** to `client/**`, `server/**`, `.github/**`, `sonar-project.properties` — gitops/k8s/terraform-only pushes do NOT trigger it) |
+| `.github/workflows/devsecops.yml` | orchestrator on PR to `main` + push to `main` (push is **path-filtered** to `client/**`, `server/**`, `.github/workflows/**`, `sonar-project.properties` — gitops/k8s/terraform-only pushes do NOT trigger it) |
 | code-quality / code-tests | client ESLint, server `node --check`, client build |
 | secret-scanning | GitLeaks |
 | dependency-scan | `npm audit` for client + server |
@@ -345,8 +345,8 @@ The client image is built with **same-origin** URLs (`VITE_API_URL=/api`,
 server, so no CORS round trip is needed from the browser's perspective
 (CORS still applies for the OAuth redirects via `CLIENT_URL`).
 
-The old Jenkins pipeline (`Jenkinsfile`) still drives the EC2 +
-docker-compose deployment and is untouched by this.
+The legacy EC2 compose flow has been removed — GitHub Actions + ArgoCD is
+the only deploy path.
 
 ## 14. Tear it all down
 

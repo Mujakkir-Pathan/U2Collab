@@ -3,7 +3,7 @@
 A full-stack MERN application that enables real-time collaboration with a shared document editor, infinite whiteboard, and team chat — all in one workspace.
 
 🔗 **Live Demo:** [u2-collab.vercel.app](https://u2-collab.vercel.app)
-🐙 **GitHub:** [github.com/Charan-bavaji/U2Collab](https://github.com/Charan-bavaji/U2Collab)
+🐙 **GitHub:** [github.com/Mujakkir-Pathan/U2Collab](https://github.com/Mujakkir-Pathan/U2Collab)
 
 ---
 
@@ -77,8 +77,13 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
-CLIENT_URL=https://your-client-url
+CLIENT_URL=http://localhost:5173   # origin of the CLIENT
+PORT=5000                          # optional, default 5000
+NODE_ENV=development               # dev => cookies work over plain HTTP
 ```
+
+> A ready-to-copy template lives at `server/.env.example` (and
+> `client/.env.example` for the Vite vars).
 
 ---
 
@@ -93,7 +98,7 @@ CLIENT_URL=https://your-client-url
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Charan-bavaji/U2Collab.git
+git clone https://github.com/Mujakkir-Pathan/U2Collab.git
 cd U2Collab
 
 # 2. Setup server
@@ -154,12 +159,17 @@ U2Collab/
 
 ## 🌐 Deployment
 
+Production runs on **AWS EKS** with GitOps — see **[Deploy.md](Deploy.md)** for
+the full walkthrough (`scripts/deploy.sh` shortcuts it).
+
 | Layer | Platform |
 |-------|----------|
-| Client | Vercel |
-| Server | Render |
+| CI/CD | GitHub Actions (`.github/workflows/`) |
+| Deploy | ArgoCD (GitOps: merge to `main` → sync) |
+| Cluster | AWS EKS + Envoy Gateway (Gateway API) |
 | Database | MongoDB Atlas |
-| Docker Images | DockerHub (`charanbavaji/u2collab-client`, `charanbavaji/u2collab-server`) |
+| Images | DockerHub (`charanbavaji/u2collab-client`, `charanbavaji/u2collab-server`) |
+| Local dev | `make up` (docker compose) |
 
 ---
 

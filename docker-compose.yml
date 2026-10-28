@@ -1,8 +1,6 @@
-# Local dev / EC2 deploy. GitHub Actions + ArgoCD own the Kubernetes path;
-# this file is for docker compose (make up) and the legacy Jenkins/EC2 flow.
+# Local dev only (`make up`). GitHub Actions + ArgoCD own the Kubernetes path.
 #
-# Tags come from .env (make setup): CLIENT_TAG / SERVER_TAG — Jenkins writes
-# sha-* there after a push.
+# Tags come from .env (make setup): CLIENT_TAG / SERVER_TAG.
 services:
   client:
     build:
@@ -24,8 +22,7 @@ services:
     image: charanbavaji/u2collab-server:${SERVER_TAG:-latest}
     container_name: u2collab-server
     restart: unless-stopped
-    # SERVER_ENV_FILE: local default is ./server/.env; on the EC2 deploy box
-    # Jenkins sets SERVER_ENV_FILE=/opt/u2collab-secrets/server.env in .env.
+    # SERVER_ENV_FILE defaults to ./server/.env; override it in .env.
     env_file:
       - ${SERVER_ENV_FILE:-./server/.env}
     healthcheck:
