@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: u2collab-server
-          image: mujakkirpathan/u2collab-server:sha-cb62826
+          image: mujakkirpathan/u2collab-server:sha-2519131
           ports:
             - containerPort: 5000
           env:

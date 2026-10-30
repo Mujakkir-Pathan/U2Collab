@@ -11,7 +11,7 @@ server:
   image:
     repository: mujakkirpathan/u2collab-server
     # CI (gitops-bump) replaces this with an immutable sha-* tag.
-    tag: sha-cb62826
+    tag: sha-2519131
     pullPolicy: IfNotPresent
   # Pinned at 1 on purpose: Yjs docs, whiteboard state and presence live in
   # in-memory Maps, and Socket.IO has no Redis adapter. Raise only after adding
@@ -32,7 +32,7 @@ server:
 client:
   image:
     repository: mujakkirpathan/u2collab-client
-    tag: sha-cb62826
+    tag: sha-2519131
     pullPolicy: IfNotPresent
   replicas: 1
   containerPort: 80

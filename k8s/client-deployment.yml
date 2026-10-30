@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: u2collab-client
-          image: mujakkirpathan/u2collab-client:sha-cb62826
+          image: mujakkirpathan/u2collab-client:sha-2519131
           ports:
             - containerPort: 80
           # No env: VITE_API_URL / VITE_SOCKET_URL are BUILD args baked into the
