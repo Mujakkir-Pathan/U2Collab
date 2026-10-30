@@ -10,7 +10,7 @@ COPY . .
 
 # node:alpine ships a non-root `node` user; the app needs no privileges.
 RUN chown -R node:node /app
-USER node
+USER 1000
 
 EXPOSE 5000
 
