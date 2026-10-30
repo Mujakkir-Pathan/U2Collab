@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: u2collab-server
-          image: charanbavaji/u2collab-server:latest # CI bumps this to sha-*
+          image: mujakkirpathan/u2collab-server:sha-cb62826
           ports:
             - containerPort: 5000
           env:

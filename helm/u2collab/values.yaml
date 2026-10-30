@@ -1,6 +1,5 @@
 nameOverride: ""
 fullnameOverride: ""
-
 externalSecrets:
   enabled: true
   # AWS Secrets Manager JSON key holding: MONGO_URI, JWT_SECRET,
@@ -8,12 +7,11 @@ externalSecrets:
   secretKey: u2collab/server
   storeName: aws-secrets-manager
   refreshInterval: 1h
-
 server:
   image:
-    repository: charanbavaji/u2collab-server
+    repository: mujakkirpathan/u2collab-server
     # CI (gitops-bump) replaces this with an immutable sha-* tag.
-    tag: latest
+    tag: sha-cb62826
     pullPolicy: IfNotPresent
   # Pinned at 1 on purpose: Yjs docs, whiteboard state and presence live in
   # in-memory Maps, and Socket.IO has no Redis adapter. Raise only after adding
@@ -31,11 +29,10 @@ server:
     limits:
       cpu: 500m
       memory: 384Mi
-
 client:
   image:
-    repository: charanbavaji/u2collab-client
-    tag: latest
+    repository: mujakkirpathan/u2collab-client
+    tag: sha-cb62826
     pullPolicy: IfNotPresent
   replicas: 1
   containerPort: 80
@@ -60,7 +57,6 @@ client:
     # Cluster DNS ClusterIP. k3s/kubeadm default below — override per cluster
     # (EKS CoreDNS is often 172.20.0.10, kind is 10.96.0.10).
     resolver: "10.43.0.10"
-
 gateway:
   enabled: true
   className: envoy
@@ -85,7 +81,6 @@ gateway:
       name: letsencrypt-prod
       kind: ClusterIssuer
     httpsRedirect: true
-
 # The shared ClusterIssuers in gitops/cert-manager/ hard-wire their solver to the
 # RAW stack's Gateway, so the Helm stack needs its own Issuer. Each stack gets
 # its own load balancer, so they need separate hostnames and DNS records.
