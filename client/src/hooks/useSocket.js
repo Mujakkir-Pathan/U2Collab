@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 
 let socket = null   // singleton — one connection per app session

@@ -7,13 +7,13 @@ export const useWhiteboard = (roomId) => {
   const [shapes, setShapes] = useState([])
   const shapesRef      = useRef([])   // keep ref in sync for callbacks
 
-  const updateShapes = (updater) => {
+  const updateShapes = useCallback((updater) => {
     setShapes(prev => {
       const next = updater(prev)
       shapesRef.current = next
       return next
     })
-  }
+  }, [])
 
   useEffect(() => {
     if (!roomId) return
@@ -40,7 +40,7 @@ export const useWhiteboard = (roomId) => {
   const dispatch = useCallback((op) => {
     updateShapes(prev => applyOp(prev, op))
     socket.emit('whiteboard:op', { roomId, op })
-  }, [roomId])
+  }, [roomId, socket, updateShapes])
 
   // helpers
   const addShape = (type, extra = {}) => dispatch({

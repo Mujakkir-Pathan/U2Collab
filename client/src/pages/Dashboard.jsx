@@ -381,7 +381,6 @@ const Dashboard = () => {
     const [newName, setNewName] = useState('')
     const [tab, setTab] = useState('my')
     const [q, setQ] = useState('')
-    const [activeType, setActiveType] = useState('App')
     const [announce, setAnnounce] = useState(true)
     const taRef = useRef(null)
 

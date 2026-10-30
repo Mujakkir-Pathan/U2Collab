@@ -186,7 +186,7 @@ const Canvas = ({ roomId, theme = 'dark' }) => {
   const onStageMouseUp = () => { setIsPanning(false); panOrigin.current = null }
 
   // ── click to add shape ──────────────────────────────────────────────────
-  const onStageClick = (e) => {
+  const onStageClick = () => {
     if (tool === 'select' || tool === 'hand') return
     if (isPanning) return
     const stage = stageRef.current
@@ -637,12 +637,13 @@ const Minimap = ({ shapes, T, viewW, viewH, scale, offset }) => {
                 rx={(s.radiusX ?? 50) * mmScale} ry={(s.radiusY ?? 35) * mmScale}
                 fill={s.fill} opacity={0.7} />
             case 'line':
-            case 'arrow':
+            case 'arrow': {
               const [x1, y1, x2, y2] = s.points ?? [0, 0, 60, 0]
               return <line key={s.id}
                 x1={x + x1 * mmScale} y1={y + y1 * mmScale}
                 x2={x + x2 * mmScale} y2={y + y2 * mmScale}
                 stroke={s.stroke} strokeWidth={1} opacity={0.7} />
+            }
             default: return null
           }
         })}

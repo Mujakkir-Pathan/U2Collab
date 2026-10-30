@@ -1,13 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import * as Y from 'yjs'
 import { useSocket } from './useSocket'
 
 export const useYjs = (roomId) => {
-  const socket  = useSocket()
-  const docRef  = useRef(null)
-
-  if (!docRef.current) docRef.current = new Y.Doc()
-  const doc = docRef.current
+  const socket = useSocket()
+  const [doc]  = useState(() => new Y.Doc())
 
   useEffect(() => {
     if (!roomId) return

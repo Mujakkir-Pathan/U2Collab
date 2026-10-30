@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { m, motion, useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import mainImg from "/footerImg.png";
 const testimonials = [
     {

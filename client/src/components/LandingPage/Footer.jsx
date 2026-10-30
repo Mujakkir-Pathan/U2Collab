@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import logo from "../../assets/logo.png";
 
 const links = {
     Product: ["Features", "Pricing", "Blog", "Changelog", "Company"],

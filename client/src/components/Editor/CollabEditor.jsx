@@ -4,7 +4,7 @@ import Collaboration from '@tiptap/extension-collaboration'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import { useYjs } from '../../hooks/useYjs'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
 // ─── install extra tiptap extensions ────────────────────────────────────────
 // npm install @tiptap/extension-placeholder @tiptap/extension-character-count

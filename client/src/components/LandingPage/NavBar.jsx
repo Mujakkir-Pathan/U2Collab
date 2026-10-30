@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "../../assets/logo.png";
-import { Link, redirect } from "react-router-dom";
+import { Link } from "react-router-dom";
 const MotionLink = motion(Link);
 
 const NAV_LINKS = [
@@ -382,7 +381,7 @@ function MegaMenu({ menu }) {
 }
 
 // ── Mobile Menu ─────────────────────────────────────────────────────────────
-function MobileMenu({ open, onClose }) {
+function MobileMenu({ open }) {
   return (
     <AnimatePresence>
       {open && (
@@ -590,7 +589,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile menu */}
-        <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} />
+        <MobileMenu open={mobileOpen} />
       </motion.nav>
     </div>
   );
