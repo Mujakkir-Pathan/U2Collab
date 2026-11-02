@@ -1,50 +1,47 @@
-# U2Collab — Real-Time Collaborative Workspace
+# U2Collab: Real-Time Collaborative Workspace
 
-A full-stack MERN application that enables real-time collaboration with a shared document editor, infinite whiteboard, and team chat — all in one workspace.
+A full-stack MERN application for real-time collaboration: shared document
+editor, infinite whiteboard, and team chat in one workspace.
 
-🔗 **Live Demo:** [u2-collab.vercel.app](https://u2-collab.vercel.app)
-🐙 **GitHub:** [github.com/Mujakkir-Pathan/U2Collab](https://github.com/Mujakkir-Pathan/U2Collab)
+**Live Demo:** [u2-collab.vercel.app](https://u2-collab.vercel.app)
+**GitHub:** [github.com/Mujakkir-Pathan/U2Collab](https://github.com/Mujakkir-Pathan/U2Collab)
 
----
+## What is U2Collab?
 
-## 📌 What is U2Collab?
+U2Collab is a real-time collaborative platform where teams can work together
+on documents, whiteboards, and chat at the same time, with no page refresh or
+sync delay. It aims to combine what Notion and Miro do separately.
 
-U2Collab is a real-time collaborative platform where teams can work together simultaneously on documents, whiteboards, and chat — without any page refresh or sync delay. Built to simulate tools like Notion + Miro combined.
-
----
-
-## ✨ Features
+## Features
 
 | Feature | Description |
 |--------|-------------|
-| 🔐 Authentication | Google & GitHub OAuth via Passport.js with HttpOnly JWT cookies |
-| 📝 Collaborative Editor | Real-time document editing using Yjs CRDT + Tiptap |
-| 🎨 Infinite Whiteboard | Drag, draw, and annotate using Konva.js canvas |
-| 💬 Real-time Chat | Room-based team chat powered by Socket.io |
-| 🚪 Room Management | Create and join collaborative rooms with unique IDs |
-| 🔒 Secure Sessions | HttpOnly JWT cookies, no localStorage token exposure |
+| Authentication | Google and GitHub OAuth via Passport.js with HttpOnly JWT cookies |
+| Collaborative Editor | Real-time document editing using Yjs CRDT + Tiptap |
+| Infinite Whiteboard | Drag, draw, and annotate using Konva.js canvas |
+| Real-time Chat | Room-based team chat powered by Socket.io |
+| Room Management | Create and join collaborative rooms with unique IDs |
+| Secure Sessions | HttpOnly JWT cookies, no localStorage token exposure |
 
----
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
-- **React.js** (Vite) — UI framework
-- **Tiptap** — Rich text collaborative editor
-- **Yjs** — CRDT-based real-time sync engine
-- **Konva.js** — Infinite whiteboard canvas
-- **Socket.io-client** — Real-time communication
+
+- **React.js** (Vite): UI framework
+- **Tiptap**: rich text collaborative editor
+- **Yjs**: CRDT-based real-time sync engine
+- **Konva.js**: infinite whiteboard canvas
+- **Socket.io-client**: real-time communication
 
 ### Backend
-- **Node.js + Express.js** — REST API & WebSocket server
-- **MongoDB Atlas** — Cloud database
-- **Passport.js** — Google & GitHub OAuth strategies
-- **Socket.io** — Real-time bidirectional communication
-- **JWT** — Stateless authentication via HttpOnly cookies
 
----
+- **Node.js + Express.js**: REST API and WebSocket server
+- **MongoDB Atlas**: cloud database
+- **Passport.js**: Google and GitHub OAuth strategies
+- **Socket.io**: real-time bidirectional communication
+- **JWT**: stateless authentication via HttpOnly cookies
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Client (React/Vite)
@@ -57,19 +54,28 @@ Client (React/Vite)
                                                └── Yjs (CRDT sync)
 ```
 
----
+## CI/CD
 
-## ⚙️ Environment Variables
+Pushing to `main` runs [`.github/workflows/devsecops.yml`](.github/workflows/devsecops.yml):
 
-### Client (`client/.env`)
-```env
-VITE_API_URL=https://your-server-url
-VITE_SOCKET_URL=https://your-server-url
+1. **Gates**: lint, tests, secret scanning, dependency and image scans, Sonar
+2. **Build and push**: `mujakkirpathan/u2collab-client` and `mujakkirpathan/u2collab-server`, tagged with the commit SHA
+3. **GitOps bump**: the new tags are written into `k8s/` and `helm/u2collab/values.yaml` and committed back
+4. **ArgoCD** syncs the change to EKS, CI never touches the cluster directly
+
+```mermaid
+flowchart LR
+    P["git push to main"] --> J["GitHub Actions<br/>lint, tests, security gates"]
+    J --> B["Build and push images<br/>DockerHub, tagged with commit SHA"]
+    B --> U["Update tags in<br/>k8s/ + helm values<br/>commit back to main"]
+    U --> A["ArgoCD detects the<br/>manifest change"]
+    A --> R["EKS rolling update"]
 ```
 
-> ⚠️ Vite env vars must be present at **build time** — they are baked into the bundle during `vite build`.
+## Environment Variables
 
 ### Server (`server/.env`)
+
 ```env
 MONGO_URI=mongodb+srv://...
 JWT_SECRET=your_jwt_secret
@@ -82,19 +88,44 @@ PORT=5000                          # optional, default 5000
 NODE_ENV=development               # dev => cookies work over plain HTTP
 ```
 
-> A ready-to-copy template lives at `server/.env.example` (and
-> `client/.env.example` for the Vite vars).
+### Client (`client/.env`)
 
----
+```env
+VITE_API_URL=https://your-server-url
+VITE_SOCKET_URL=https://your-server-url
+```
 
-## 🚀 Running Locally
+Note: Vite env vars must be present at build time, they are baked into the
+bundle during `vite build`.
 
-### Prerequisites
-- Node.js v18+
-- MongoDB Atlas account
-- Google & GitHub OAuth credentials
+A ready-to-copy template lives at `server/.env.example` and
+`client/.env.example`. The Docker Compose flow also uses a root `.env`
+(created by `make setup` from `.env.example`) for ports and image tags.
 
-### Steps
+## Running Locally
+
+### Option 1: Docker Compose (recommended)
+
+```bash
+# 1. Server config (one time)
+cp server/.env.example server/.env   # fill in MONGO_URI, JWT_SECRET, OAuth keys
+
+# 2. Root config + start everything
+make setup                           # creates .env from .env.example
+make up                              # builds and starts client + server
+
+# 3. Check
+open http://localhost:5173
+make smoke
+```
+
+The client container proxies `/api` and `/socket.io` to the server through
+nginx, so no client `.env` is needed in this flow.
+
+### Option 2: Manual (two terminals, no Docker)
+
+Prerequisites: Node.js v18+, a MongoDB Atlas account, and Google and GitHub
+OAuth credentials.
 
 ```bash
 # 1. Clone the repository
@@ -103,20 +134,27 @@ cd U2Collab
 
 # 2. Setup server
 cd server
-cp .env.example .env        # Fill in your env variables
+cp .env.example .env        # fill in your env variables
 npm install
-npm run dev                 # Runs on http://localhost:5000
+npm run dev                 # runs on http://localhost:5000
 
 # 3. Setup client (new terminal)
 cd client
-cp .env.example .env        # Fill in VITE_API_URL and VITE_SOCKET_URL
+cp .env.example .env        # fill in VITE_API_URL and VITE_SOCKET_URL
 npm install
-npm run dev                 # Runs on http://localhost:5173
+npm run dev                 # runs on http://localhost:5173
 ```
 
----
+### Other commands
 
-## 🐳 Running with Docker
+```bash
+make down      # stop everything
+make logs      # follow the logs
+make reset     # wipe and start fresh
+make lint      # client ESLint + server syntax check
+```
+
+## Running with Docker (manual)
 
 ```bash
 # Build and run server
@@ -131,53 +169,59 @@ docker build \
 docker run -p 5173:80 u2collab-client
 ```
 
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 U2Collab/
 ├── client/                  # React + Vite frontend
 │   ├── src/
-│   │   ├── components/      # UI components
-│   │   ├── pages/           # Route pages
-│   │   └── socket.js        # Socket.io client setup
+│   │   ├── components/      # Editor, whiteboard, presence, landing page
+│   │   ├── pages/           # Home, Login, Dashboard, Room
+│   │   ├── hooks/           # useSocket, useYjs, usePresence, useWhiteboard
+│   │   └── services/        # REST API client
 │   ├── Dockerfile
-│   └── nginx.conf
+│   └── nginx.conf           # proxies /api and /socket.io to the server
 │
 ├── server/                  # Node.js + Express backend
-│   ├── routes/              # API routes
+│   ├── routes/              # auth, rooms, snapshots
+│   ├── controllers/         # request handlers
 │   ├── models/              # MongoDB schemas
-│   ├── config/              # Passport strategies
-│   ├── socket/              # Socket.io handlers
+│   ├── sockets/             # Socket.io handlers (editor, whiteboard, rooms)
+│   ├── config/              # DB and Passport strategies
 │   └── Dockerfile
 │
-└── docker-compose.yml
+├── k8s/                     # raw Kubernetes manifests (ArgoCD path)
+├── helm/u2collab/           # Helm chart (same app, alternative delivery)
+├── gitops/                  # ArgoCD Applications + platform (ESO, cert-manager)
+├── terraform/               # EKS + VPC + IAM, S3 remote state
+│   └── bootstrap/           # state bucket, run once
+├── ansible/                 # bootstrap a deploy machine (optional)
+├── scripts/deploy.sh        # one-shot EKS deploy
+│
+├── docker-compose.yml       # local run: client + server
+├── .env.example             # compose settings (make setup)
+├── Makefile                 # make setup/up/down/smoke/lint
+├── Deploy.md                # full EKS deployment walkthrough
+└── .github/workflows/       # DevSecOps pipeline
 ```
 
----
+## Deployment
 
-## 🌐 Deployment
-
-Production runs on **AWS EKS** with GitOps — see **[Deploy.md](Deploy.md)** for
+Production runs on **AWS EKS** with GitOps, see **[Deploy.md](Deploy.md)** for
 the full walkthrough (`scripts/deploy.sh` shortcuts it).
 
 | Layer | Platform |
 |-------|----------|
 | CI/CD | GitHub Actions (`.github/workflows/`) |
-| Deploy | ArgoCD (GitOps: merge to `main` → sync) |
+| Deploy | ArgoCD (GitOps: merge to `main` then sync) |
 | Cluster | AWS EKS + Envoy Gateway (Gateway API) |
 | Database | MongoDB Atlas |
-| Images | DockerHub (`charanbavaji/u2collab-client`, `charanbavaji/u2collab-server`) |
+| Images | DockerHub (`mujakkirpathan/u2collab-client`, `mujakkirpathan/u2collab-server`) |
 | Local dev | `make up` (docker compose) |
 
----
-
-## 👨‍💻 Author
+## Author
 
 **Charan Bavaji**
+
 - GitHub: [github.com/Charan-bavaji](https://github.com/Charan-bavaji)
 - LinkedIn: [linkedin.com/in/charan-bavaji](https://linkedin.com/in/charan-bavaji)
-
-
-test

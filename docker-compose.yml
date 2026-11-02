@@ -9,7 +9,7 @@ services:
         # Same-origin defaults: nginx proxies /api and /socket.io to `server`.
         VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_SOCKET_URL: ${VITE_SOCKET_URL:-/}
-    image: charanbavaji/u2collab-client:${CLIENT_TAG:-latest}
+    image: mujakkirpathan/u2collab-client:${CLIENT_TAG:-latest}
     container_name: u2collab-client
     restart: unless-stopped
     depends_on:
@@ -19,7 +19,7 @@ services:
 
   server:
     build: ./server
-    image: charanbavaji/u2collab-server:${SERVER_TAG:-latest}
+    image: mujakkirpathan/u2collab-server:${SERVER_TAG:-latest}
     container_name: u2collab-server
     restart: unless-stopped
     # SERVER_ENV_FILE defaults to ./server/.env; override it in .env.
