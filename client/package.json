@@ -25,7 +25,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-konva": "^19.2.3",
-    "react-router-dom": "^7.14.1",
+    "react-router-dom": "^7.18.5",
     "socket.io-client": "^4.8.4",
     "tailwindcss": "^4.3.3",
     "uuid": "^14.0.0",
